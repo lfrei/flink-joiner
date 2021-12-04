@@ -1,12 +1,13 @@
 package com.redbeard.flink;
 
 import com.redbeard.flink.operator.ToUpperCase;
+import org.apache.flink.api.common.eventtime.WatermarkStrategy;
+import org.apache.flink.connector.kafka.sink.KafkaSink;
+import org.apache.flink.connector.kafka.source.KafkaSource;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
-import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer011;
-import org.apache.flink.streaming.connectors.kafka.FlinkKafkaProducer011;
 
-import static com.redbeard.flink.kafka.Consumer.createConsumer;
-import static com.redbeard.flink.kafka.Producer.createProducer;
+import static com.redbeard.flink.kafka.Source.createSource;
+import static com.redbeard.flink.kafka.Sink.createSink;
 
 public class FlinkDataPipeline {
 
@@ -16,13 +17,13 @@ public class FlinkDataPipeline {
         String consumerGroup = "words-capitalize";
         String bootstrapServer = "localhost:9092";
 
-        FlinkKafkaConsumer011<String> consumer = createConsumer(inputTopic, bootstrapServer, consumerGroup, true);
-        FlinkKafkaProducer011<String> producer = createProducer(outputTopic, bootstrapServer);
+        KafkaSource<String> source = createSource(inputTopic, bootstrapServer, consumerGroup);
+        KafkaSink<String> sink = createSink(outputTopic, bootstrapServer);
 
         environment
-                .addSource(consumer)
+                .fromSource(source, WatermarkStrategy.noWatermarks(), "words-source")
                 .map(new ToUpperCase())
-                .addSink(producer);
+                .sinkTo(sink);
     }
 
     public static void main(String[] args) throws Exception {
