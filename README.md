@@ -19,3 +19,22 @@
 
 1. Shutdown Flink `./bin/stop-cluster.sh`
 2. Shutdown Kafka Broker
+
+## Test
+
+1. Send data to `address` topic with non-null key and value:
+```
+{
+   "name": "", 
+   "street": "", 
+   "postalCode": ""
+}
+```
+2. Send data to `postalCode` topic, with key=`postalCode` and value:
+```
+{
+   "postalCode": "",
+   "town": ""
+}
+```
+3. Inspect `delivery-address` topic for joined address
