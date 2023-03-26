@@ -12,6 +12,7 @@ import org.apache.flink.streaming.api.windowing.time.Time;
 
 import static com.redbeard.flink.kafka.Sink.createSink;
 import static com.redbeard.flink.kafka.Source.createSource;
+import static org.apache.flink.api.common.eventtime.WatermarkStrategy.forMonotonousTimestamps;
 import static org.apache.flink.api.common.eventtime.WatermarkStrategy.noWatermarks;
 
 public class FlinkDataPipeline {
@@ -33,14 +34,16 @@ public class FlinkDataPipeline {
         KafkaSource<String> postalCodeSource = createSource("postal-code", BOOTSTRAP_SERVER, "joiner");
         KafkaSink<String> deliverySink = createSink("delivery-address", BOOTSTRAP_SERVER);
 
-        DataStreamSource<String> addressStream = environment.fromSource(addressSource, noWatermarks(), "address-source");
-        DataStreamSource<String> postalCodeStream = environment.fromSource(postalCodeSource, noWatermarks(), "postal-code-source");
+        DataStreamSource<String> addressStream = environment
+                .fromSource(addressSource, forMonotonousTimestamps(), "address-source");
+        DataStreamSource<String> postalCodeStream = environment
+                .fromSource(postalCodeSource, forMonotonousTimestamps(), "postal-code-source");
 
         addressStream
                 .join(postalCodeStream)
                 .where(new PostalCodeSelector())
                 .equalTo(new PostalCodeSelector())
-                .window(TumblingEventTimeWindows.of(Time.seconds(10)))
+                .window(TumblingEventTimeWindows.of(Time.seconds(100)))
                 .apply(new AddressJoiner())
                 .sinkTo(deliverySink);
     }
